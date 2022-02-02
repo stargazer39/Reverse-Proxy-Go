@@ -21,6 +21,7 @@ type ProxyEntry struct {
 type Config struct {
 	Port           string       `json:"port"`
 	Entries        []ProxyEntry `json:"entries"`
+	NoRoute        string       `json:"noroute_route"`
 	HTTPS          bool         `json:"https"`
 	CertPath       string       `json:"cert_path"`
 	PrivateKeyPath string       `json:"private_key_path"`
@@ -70,6 +71,12 @@ func main() {
 			}
 
 			proxy.ServeHTTP(c.Writer, c.Request)
+		})
+	}
+
+	if len(config_obj.NoRoute) > 0 {
+		r.NoRoute(func(c *gin.Context) {
+			c.Redirect(http.StatusFound, config_obj.NoRoute)
 		})
 	}
 
