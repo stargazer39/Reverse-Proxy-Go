@@ -51,7 +51,7 @@ func main() {
 	for i := 0; i < len(config_obj.Entries); i++ {
 		entry := config_obj.Entries[i]
 
-		r.Any(fmt.Sprintf("/*%s", entry.Path), func(c *gin.Context) {
+		r.Any(fmt.Sprintf("%s/*path", entry.Path), func(c *gin.Context) {
 			remote, err := url.Parse(entry.Address)
 
 			if err != nil {
@@ -66,16 +66,16 @@ func main() {
 				req.Host = remote.Host
 				req.URL.Scheme = remote.Scheme
 				req.URL.Host = remote.Host
-				req.URL.Path = c.Param(entry.Path)[len(entry.Path)+1:] + "/"
+				req.URL.Path = c.Param("path")
 			}
 
 			proxy.ServeHTTP(c.Writer, c.Request)
 		})
 	}
 
-	/* r.GET("/", func(c *gin.Context) {
+	r.GET("/", func(c *gin.Context) {
 		c.String(200, "Hello")
-	}) */
+	})
 
 	if config_obj.HTTPS {
 		r.RunTLS(config_obj.Port, config_obj.CertPath, config_obj.PrivateKeyPath)
