@@ -18,6 +18,11 @@ type ProxyEntry struct {
 	Path    string `json:"path"`
 }
 
+type Config struct {
+	Port    string       `json:"port"`
+	Entries []ProxyEntry `json:"entries"`
+}
+
 func main() {
 	config_path := flag.String("config", "./config.json", "Config path")
 
@@ -28,20 +33,20 @@ func main() {
 		log.Panicln(cErr)
 	}
 
-	var entries []ProxyEntry
+	var config_obj Config
 
-	if jErr := json.Unmarshal(config, &entries); jErr != nil {
+	if jErr := json.Unmarshal(config, &config_obj); jErr != nil {
 		log.Panicln(jErr)
 	}
 
-	if len(entries) == 0 {
+	if len(config_obj.Entries) == 0 {
 		log.Panicf("No entries in %s", *config_path)
 	}
 
 	r := gin.Default()
 	// Register handlers
-	for i := 0; i < len(entries); i++ {
-		entry := entries[i]
+	for i := 0; i < len(config_obj.Entries); i++ {
+		entry := config_obj.Entries[i]
 
 		r.Any(fmt.Sprintf("/*%s", entry.Path), func(c *gin.Context) {
 			remote, err := url.Parse(entry.Address)
@@ -69,5 +74,5 @@ func main() {
 		c.String(200, "Hello")
 	}) */
 
-	r.Run(":8080")
+	r.Run(config_obj.Port)
 }
