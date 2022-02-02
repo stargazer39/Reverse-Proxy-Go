@@ -66,7 +66,7 @@ func main() {
 				req.Host = remote.Host
 				req.URL.Scheme = remote.Scheme
 				req.URL.Host = remote.Host
-				req.URL.Path = c.Param(entry.Path)[len(entry.Path):]
+				req.URL.Path = c.Param(entry.Path)[len(entry.Path)+1:] + "/"
 			}
 
 			proxy.ServeHTTP(c.Writer, c.Request)
