@@ -73,10 +73,6 @@ func main() {
 		})
 	}
 
-	r.GET("/", func(c *gin.Context) {
-		c.String(200, "Hello")
-	})
-
 	if config_obj.HTTPS {
 		r.RunTLS(config_obj.Port, config_obj.CertPath, config_obj.PrivateKeyPath)
 	} else {
