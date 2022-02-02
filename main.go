@@ -19,8 +19,11 @@ type ProxyEntry struct {
 }
 
 type Config struct {
-	Port    string       `json:"port"`
-	Entries []ProxyEntry `json:"entries"`
+	Port           string       `json:"port"`
+	Entries        []ProxyEntry `json:"entries"`
+	HTTPS          bool         `json:"https"`
+	CertPath       string       `json:"cert_path"`
+	PrivateKeyPath string       `json:"private_key_path"`
 }
 
 func main() {
@@ -74,5 +77,9 @@ func main() {
 		c.String(200, "Hello")
 	}) */
 
-	r.Run(config_obj.Port)
+	if config_obj.HTTPS {
+		r.RunTLS(config_obj.Port, config_obj.CertPath, config_obj.PrivateKeyPath)
+	} else {
+		r.Run(config_obj.Port)
+	}
 }
