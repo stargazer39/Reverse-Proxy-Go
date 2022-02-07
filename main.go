@@ -54,6 +54,49 @@ func main() {
 
 	r := gin.Default()
 	// Register handlers
+	entries := make(map[string]map[string]string)
+
+	for _, entry := range config_obj.Entries {
+		if _, ok := entries[entry.Path]; !ok {
+			entries[entry.Path] = make(map[string]string)
+		} else {
+			entries[entry.Path][entry.MatchDomain] = entry.Address
+		}
+	}
+
+	for k, p := range entries {
+		addrMap := p
+		path := k
+
+		r.Any(fmt.Sprintf("%s/*path", path), func(c *gin.Context) {
+			s, found := addrMap[c.Request.Host]
+
+			if !found {
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+
+			remote, err := url.Parse(s)
+
+			if err != nil {
+				panic(err)
+			}
+
+			proxy := httputil.NewSingleHostReverseProxy(remote)
+
+			log.Println(c.Request.Host)
+			proxy.Director = func(req *http.Request) {
+				req.Header = c.Request.Header
+				req.Host = remote.Host
+				req.URL.Scheme = remote.Scheme
+				req.URL.Host = remote.Host
+				req.URL.Path = c.Param("path")
+			}
+
+			proxy.ServeHTTP(c.Writer, c.Request)
+		})
+	}
+
 	for i := 0; i < len(config_obj.Entries); i++ {
 		entry := config_obj.Entries[i]
 
