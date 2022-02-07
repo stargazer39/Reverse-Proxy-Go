@@ -58,21 +58,22 @@ func main() {
 	for _, entry := range config_obj.Entries {
 		if _, ok := entries[entry.Path]; !ok {
 			entries[entry.Path] = make(map[string]string)
-		} else {
-			entries[entry.Path][entry.MatchDomain] = entry.Address
 		}
+		entries[entry.Path][entry.MatchDomain] = entry.Address
 	}
 
 	r.Any("/*path", func(c *gin.Context) {
 		path := c.Param("path")
 		patharr := strings.Split(path, "/")
+		addrMap, found := entries["/"+patharr[1]]
 
-		log.Println(path, patharr)
-
-		addrMap := entries[patharr[0]]
+		if !found {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
 
 		s, found := addrMap[c.Request.Host]
-		log.Println(c.Request.Host, s)
+
 		if !found {
 			c.AbortWithStatus(http.StatusNotFound)
 			return
@@ -85,6 +86,7 @@ func main() {
 		}
 
 		proxy := httputil.NewSingleHostReverseProxy(remote)
+		url_path := "/" + strings.Join(patharr[2:], "/")
 
 		log.Println(c.Request.Host)
 		proxy.Director = func(req *http.Request) {
@@ -92,7 +94,7 @@ func main() {
 			req.Host = remote.Host
 			req.URL.Scheme = remote.Scheme
 			req.URL.Host = remote.Host
-			req.URL.Path = strings.Join(patharr[1:], "/")
+			req.URL.Path = url_path
 		}
 
 		proxy.ServeHTTP(c.Writer, c.Request)
