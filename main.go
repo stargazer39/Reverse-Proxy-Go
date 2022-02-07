@@ -72,7 +72,7 @@ func main() {
 		addrMap := entries[patharr[0]]
 
 		s, found := addrMap[c.Request.Host]
-		log.Println(c.Request.Host)
+		log.Println(c.Request.Host, s)
 		if !found {
 			c.AbortWithStatus(http.StatusNotFound)
 			return
