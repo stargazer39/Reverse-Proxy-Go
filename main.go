@@ -68,7 +68,9 @@ func main() {
 		addrMap := p
 		path := k
 
-		r.Any(fmt.Sprintf("%s/*path", path), func(c *gin.Context) {
+		group := r.Group(path)
+
+		group.Any("/*path", func(c *gin.Context) {
 			s, found := addrMap[c.Request.Host]
 
 			if !found {
