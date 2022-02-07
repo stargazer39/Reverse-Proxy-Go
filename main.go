@@ -19,14 +19,15 @@ type ProxyEntry struct {
 }
 
 type Config struct {
-	Port           string       `json:"port"`
-	HTTPPort       string       `json:"http_port"`
-	Entries        []ProxyEntry `json:"entries"`
-	NoRoute        string       `json:"noroute_route"`
-	HTTPS          bool         `json:"https"`
-	CertPath       string       `json:"cert_path"`
-	PrivateKeyPath string       `json:"private_key_path"`
-	AlwaysHTTPS    bool         `json:"always_https"`
+	Port               string       `json:"port"`
+	HTTPPort           string       `json:"http_port"`
+	Entries            []ProxyEntry `json:"entries"`
+	NoRoute            string       `json:"noroute_route"`
+	HTTPS              bool         `json:"https"`
+	CertPath           string       `json:"cert_path"`
+	PrivateKeyPath     string       `json:"private_key_path"`
+	AlwaysHTTPS        bool         `json:"always_https"`
+	DefaultHTTPSDomain string       `json:"default_https_domain"`
 }
 
 func main() {
@@ -63,7 +64,7 @@ func main() {
 
 			proxy := httputil.NewSingleHostReverseProxy(remote)
 
-			log.Println(c.Request.Host + c.Request.URL.Path)
+			log.Println(c.Request.Host)
 			proxy.Director = func(req *http.Request) {
 				req.Header = c.Request.Header
 				req.Host = remote.Host
@@ -88,7 +89,7 @@ func main() {
 				h := gin.Default()
 				h.GET("/*path", func(c *gin.Context) {
 					path := c.Param("path")
-					c.Redirect(http.StatusFound, "https://dehemi.com/"+path)
+					c.Redirect(http.StatusFound, "https://"+config_obj.DefaultHTTPSDomain+"/"+path)
 				})
 				h.Run(config_obj.HTTPPort)
 			}()
