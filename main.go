@@ -69,7 +69,8 @@ func main() {
 
 		log.Println(path, patharr)
 
-		addrMap := entries[path]
+		addrMap := entries[patharr[0]]
+
 		s, found := addrMap[c.Request.Host]
 
 		if !found {
