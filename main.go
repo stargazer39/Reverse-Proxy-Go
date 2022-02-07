@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -64,71 +63,39 @@ func main() {
 		}
 	}
 
-	for k, p := range entries {
-		addrMap := p
-		path := k
+	r.Any("/*path", func(c *gin.Context) {
+		path := c.Param("path")
+		patharr := strings.Split(path, "/")
 
-		group := r.Group(path)
+		log.Println(path, patharr)
 
-		group.Any("/*path", func(c *gin.Context) {
-			s, found := addrMap[c.Request.Host]
+		addrMap := entries[path]
+		s, found := addrMap[c.Request.Host]
 
-			if !found {
-				c.AbortWithStatus(http.StatusNotFound)
-				return
-			}
+		if !found {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
 
-			remote, err := url.Parse(s)
+		remote, err := url.Parse(s)
 
-			if err != nil {
-				panic(err)
-			}
+		if err != nil {
+			panic(err)
+		}
 
-			proxy := httputil.NewSingleHostReverseProxy(remote)
+		proxy := httputil.NewSingleHostReverseProxy(remote)
 
-			log.Println(c.Request.Host)
-			proxy.Director = func(req *http.Request) {
-				req.Header = c.Request.Header
-				req.Host = remote.Host
-				req.URL.Scheme = remote.Scheme
-				req.URL.Host = remote.Host
-				req.URL.Path = c.Param("path")
-			}
+		log.Println(c.Request.Host)
+		proxy.Director = func(req *http.Request) {
+			req.Header = c.Request.Header
+			req.Host = remote.Host
+			req.URL.Scheme = remote.Scheme
+			req.URL.Host = remote.Host
+			req.URL.Path = strings.Join(patharr[1:], "/")
+		}
 
-			proxy.ServeHTTP(c.Writer, c.Request)
-		})
-	}
-
-	for i := 0; i < len(config_obj.Entries); i++ {
-		entry := config_obj.Entries[i]
-
-		r.Any(fmt.Sprintf("%s/*path", entry.Path), func(c *gin.Context) {
-
-			if strings.Compare(entry.MatchDomain, c.Request.Host) != 0 {
-				c.AbortWithStatus(http.StatusNotFound)
-				return
-			}
-
-			remote, err := url.Parse(entry.Address)
-
-			if err != nil {
-				panic(err)
-			}
-
-			proxy := httputil.NewSingleHostReverseProxy(remote)
-
-			log.Println(c.Request.Host)
-			proxy.Director = func(req *http.Request) {
-				req.Header = c.Request.Header
-				req.Host = remote.Host
-				req.URL.Scheme = remote.Scheme
-				req.URL.Host = remote.Host
-				req.URL.Path = c.Param("path")
-			}
-
-			proxy.ServeHTTP(c.Writer, c.Request)
-		})
-	}
+		proxy.ServeHTTP(c.Writer, c.Request)
+	})
 
 	if len(config_obj.NoRoute) > 0 {
 		r.NoRoute(func(c *gin.Context) {
