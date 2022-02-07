@@ -9,13 +9,15 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 type ProxyEntry struct {
-	Address string `json:"address"`
-	Path    string `json:"path"`
+	Address     string `json:"address"`
+	Path        string `json:"path"`
+	MatchDomain string `json:"domain"`
 }
 
 type Config struct {
@@ -56,6 +58,12 @@ func main() {
 		entry := config_obj.Entries[i]
 
 		r.Any(fmt.Sprintf("%s/*path", entry.Path), func(c *gin.Context) {
+
+			if strings.Compare(entry.MatchDomain, c.Request.Host) != 0 {
+				c.AbortWithStatus(http.StatusNotFound)
+				return
+			}
+
 			remote, err := url.Parse(entry.Address)
 
 			if err != nil {
