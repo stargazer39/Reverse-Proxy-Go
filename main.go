@@ -8,7 +8,6 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,40 +52,29 @@ func main() {
 
 	r := gin.Default()
 	// Register handlers
-	entries := make(map[string]map[string]string)
+	entries := make(map[string]string)
 
 	for _, entry := range config_obj.Entries {
-		if _, ok := entries[entry.Path]; !ok {
-			entries[entry.Path] = make(map[string]string)
-		}
-		entries[entry.Path][entry.MatchDomain] = entry.Address
+		entries[entry.MatchDomain] = entry.Address
 	}
 
 	r.Any("/*path", func(c *gin.Context) {
 		path := c.Param("path")
-		patharr := strings.Split(path, "/")
-		addrMap, found := entries["/"+patharr[1]]
+
+		address, found := entries[c.Request.Host]
 
 		if !found {
 			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
 
-		s, found := addrMap[c.Request.Host]
-
-		if !found {
-			c.AbortWithStatus(http.StatusNotFound)
-			return
-		}
-
-		remote, err := url.Parse(s)
+		remote, err := url.Parse(address)
 
 		if err != nil {
 			panic(err)
 		}
 
 		proxy := httputil.NewSingleHostReverseProxy(remote)
-		url_path := "/" + strings.Join(patharr[2:], "/")
 
 		log.Println(c.Request.Host)
 		proxy.Director = func(req *http.Request) {
@@ -94,7 +82,7 @@ func main() {
 			req.Host = remote.Host
 			req.URL.Scheme = remote.Scheme
 			req.URL.Host = remote.Host
-			req.URL.Path = url_path
+			req.URL.Path = path
 		}
 
 		proxy.ServeHTTP(c.Writer, c.Request)
@@ -112,7 +100,7 @@ func main() {
 				h := gin.Default()
 				h.GET("/*path", func(c *gin.Context) {
 					path := c.Param("path")
-					c.Redirect(http.StatusFound, "https://"+config_obj.DefaultHTTPSDomain+"/"+path)
+					c.Redirect(http.StatusFound, "https://"+c.Request.Host+"/"+path)
 				})
 				h.Run(config_obj.HTTPPort)
 			}()
